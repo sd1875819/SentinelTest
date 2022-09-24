@@ -1,0 +1,14 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="dynamic-sentinel:war">
+    <output-path>$PROJECT_DIR$/target</output-path>
+    <properties id="maven-jee-properties">
+      <options>
+        <module>dynamic-sentinel</module>
+        <packaging>war</packaging>
+      </options>
+    </properties>
+    <root id="archive" name="dynamic-sentinel-1.0.0-SNAPSHOT.war">
+      <element id="artifact" artifact-name="dynamic-sentinel:war exploded" />
+    </root>
+  </artifact>
+</component>
