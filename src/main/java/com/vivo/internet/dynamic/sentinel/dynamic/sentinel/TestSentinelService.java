@@ -213,7 +213,7 @@ public class TestSentinelService {
                 try {
                     //entry = SphU.entry(RESOURCE,  EntryType.IN, 1, PARAM_A);
                     long timeStart = System.currentTimeMillis();
-                    String result = sentinelParamPriorityTestFacade.sentinelParamPriorityTest(request);
+                    String result = sentinelParamPriorityTestFacade.sentinelParamPriorityTest("1111",request);
                     //System.out.println("time:" + (System.currentTimeMillis() - timeStart));
                     if(StringUtils.equals(result, "success")){
                         AtomicInteger passCount = passMap.get(request.getScene()) != null ? passMap.get(request.getScene()) : new AtomicInteger();
@@ -238,13 +238,17 @@ public class TestSentinelService {
                     totalMap.put(request.getScene(), totalCount);
                     total.addAndGet(1);
                 }
-                Random random2 = new Random();
-/*                try {
-                    TimeUnit.MILLISECONDS.sleep(10);
-                    //TimeUnit.MILLISECONDS.sleep(random2.nextInt(50));
-                } catch (InterruptedException e) {
-                    // ignore
-                }*/
+
+                if (seconds > 50) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(100);
+                        //TimeUnit.MILLISECONDS.sleep(random2.nextInt(50));
+                    } catch (InterruptedException e) {
+                        // ignore
+                    }
+                } else {
+                    continue;
+                }
             }
         }
     }
