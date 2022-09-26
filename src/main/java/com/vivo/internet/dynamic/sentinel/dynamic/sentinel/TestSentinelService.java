@@ -23,13 +23,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class TestSentinelService {
 
-    private static volatile AtomicInteger methodCount = new AtomicInteger();
-
+    //private static volatile AtomicInteger methodCount = new AtomicInteger();
+    //定义方法里同一个入参的三种不同的具体参数值，其可以对应线上三种不同的业务场景，
+    //一个dubbo接口里的方法在给控制业务场景的参数(sence值)传入不同的值时就对应不同的业务场景，传入gamecenter时该方法就是给游戏中心提供数据，传入shop时该方法就是给商店提供数据。
     public static final String PARAM_A = "paramA";
     public static final String PARAM_B = "paramB";
     public static final String PARAM_C = "paramC";
 
-    private static AtomicInteger[] pass = new AtomicInteger[3];
+    //定义统计流量通过、被拦截、及总流量(通过+拦截）
+    private static AtomicInteger[] pass = new AtomicInteger[3]; //AtomicInteger是专门在多线程中定义int型参数时使用的，等同于Integer
     private static AtomicInteger[] block = new AtomicInteger[3];
     private static AtomicInteger total = new AtomicInteger();
 
@@ -38,6 +40,7 @@ public class TestSentinelService {
     private static Map<String, AtomicInteger> totalMap = new HashMap<>();
 
     static {
+        //定义同一个参数对应的三种参数值的流量通过、被拦截时的记录参数；
         pass[0] = new AtomicInteger();
         pass[1] = new AtomicInteger();
         pass[2] = new AtomicInteger();
@@ -62,6 +65,7 @@ public class TestSentinelService {
 
     private static int seconds = 100;
 
+    //*****调用dubbo接口的方式：在pom文件中配置dubbo的jar包，使用@DubboReference 标签引入对应的dubbo接口******
     @DubboReference(version = "1.0.0")
     private SentinelParamPriorityTestFacade sentinelParamPriorityTestFacade;
 
@@ -94,6 +98,7 @@ public class TestSentinelService {
         */
         RecommendRequest request1 = new RecommendRequest();
         request1.setScene(PARAM_A);
+        //给参数的每一个入参值定义三个线程，这样就实现了三个线程可同时对同一个入参值提供流量，达到提升qps的目的
         Thread t1 = new Thread(new RunTask1(request1));
         t1.setName("simulate-traffic-Task");
         t1.start();
@@ -137,18 +142,19 @@ public class TestSentinelService {
             long start = System.currentTimeMillis();
             System.out.println("begin to statistic!!!");
 
+            //定义初始总流量、初始通过流量及初始被拦截的流量
             long oldTotal = 0;
             long oldPass[] = new long[3];
             long oldBlock[] = new long[3];
             while (!stop) {
                 //每秒统计一次
                 try {
-                    TimeUnit.SECONDS.sleep(1);
+                    TimeUnit.SECONDS.sleep(1); //定义统计间隔是1s，即每秒统计一次
                 } catch (InterruptedException e) {
                 }
 
                 long globalTotal = total.get();
-                long oneSecondTotal = globalTotal - oldTotal;
+                long oneSecondTotal = globalTotal - oldTotal; //当前一秒内的流量=总流量-上一秒总流量；
                 oldTotal = globalTotal;
 
                 long aPass = passMap.get(PARAM_A).get();
@@ -211,15 +217,15 @@ public class TestSentinelService {
         public void run() {
             while (!stop) {
                 try {
-                    //entry = SphU.entry(RESOURCE,  EntryType.IN, 1, PARAM_A);
-                    long timeStart = System.currentTimeMillis();
-                    String result = sentinelParamPriorityTestFacade.sentinelParamPriorityTest("1111",request);
+                    String result = sentinelParamPriorityTestFacade.sentinelParamPriorityTest(request);
                     //System.out.println("time:" + (System.currentTimeMillis() - timeStart));
+                    //调用的dubbo接口里的方法返回了success，则表示该条流量通过了
                     if(StringUtils.equals(result, "success")){
                         AtomicInteger passCount = passMap.get(request.getScene()) != null ? passMap.get(request.getScene()) : new AtomicInteger();
-                        passCount.addAndGet(1);
+                        passCount.addAndGet(1);  //在多线程中使用addAndGet()方法进行+1操作，保证多线程安全。等同于totle = totle+1
                         passMap.put(request.getScene(), passCount);
                     }
+                    //调用的dubbo接口里的方法返回了failed，则表示该条流量被拦截了
                     else if(StringUtils.equals(result, "failed")){
                         AtomicInteger blockCount = blockMap.get(request.getScene()) != null ? blockMap.get(request.getScene()) : new AtomicInteger();
                         blockCount.addAndGet(1);
@@ -232,21 +238,21 @@ public class TestSentinelService {
                     System.out.println("------------------------异常----------------------------------");
                     // biz exception
                 } finally {
-                    //total.incrementAndGet();
+                    //统计总的流量=通过的流量+被拦截的流量
                     AtomicInteger totalCount = totalMap.get(request.getScene()) != null ? totalMap.get(request.getScene()) : new AtomicInteger();
                     totalCount.addAndGet(1);
                     totalMap.put(request.getScene(), totalCount);
                     total.addAndGet(1);
                 }
 
-                if (seconds > 50) {
+                if (seconds > 50) {  //当前50s让线程调用先睡眠100ms，降低qps的值
                     try {
                         TimeUnit.MILLISECONDS.sleep(100);
                         //TimeUnit.MILLISECONDS.sleep(random2.nextInt(50));
                     } catch (InterruptedException e) {
                         // ignore
                     }
-                } else {
+                } else { //当最后50s让线程调用不睡眠，提升qps的值，达到qps流量突增的目的。
                     continue;
                 }
             }
