@@ -199,9 +199,9 @@ public class TestSentinelService {
             long cost = System.currentTimeMillis() - start;
             System.out.println("time cost: " + cost + " ms");
             System.out.println("total:" + total.get()
-                    + ", passA:" + pass[0].get() + ", blockA:" + block[0].get()
-                    + ", passB:" + pass[1].get() + ", blockB:" + block[1].get()
-                    + ", passC:" + pass[2].get() + ", blockC:" + block[2].get()
+                    + ", passA:" + oldPass[0] + ", blockA:" + oldBlock[0]
+                    + ", passB:" + oldPass[1] + ", blockB:" + oldBlock[1]
+                    + ", passC:" + oldPass[2] + ", blockC:" + oldBlock[2]
             );
             System.exit(0);
         }
