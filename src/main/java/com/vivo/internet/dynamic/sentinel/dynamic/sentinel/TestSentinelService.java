@@ -3,8 +3,10 @@ package com.vivo.internet.dynamic.sentinel.dynamic.sentinel;
 
 import com.vivo.internet.content.recommend.facade.sentinel.test.SentinelParamPriorityTestFacade;
 import com.vivo.internet.recommender.common.model.request.RecommendRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -71,10 +73,10 @@ public class TestSentinelService {
 
 
     public String testMehod(){
-        //每秒数据统计
+        //每秒数据统计,统计每秒内接口总流量，各个参数场景的通过的流量及被拦截的流量
         tick();
 
-        //执行
+        //执行。为每个参数启动对应的线程，生成对应的接口流量
         simulateTraffic();
         return "success";
     }
@@ -136,7 +138,7 @@ public class TestSentinelService {
     }
 
     static class TimerTask implements Runnable {
-
+        //这里面的run()是给simulateTraffic()方法里启动的所有线程调用的
         @Override
         public void run() {
             long start = System.currentTimeMillis();
@@ -146,16 +148,16 @@ public class TestSentinelService {
             long oldTotal = 0;
             long oldPass[] = new long[3];
             long oldBlock[] = new long[3];
-            while (!stop) {
+            while (!stop) {  //共统计100秒
                 //每秒统计一次
                 try {
                     TimeUnit.SECONDS.sleep(1); //定义统计间隔是1s，即每秒统计一次
                 } catch (InterruptedException e) {
                 }
 
-                long globalTotal = total.get();
-                long oneSecondTotal = globalTotal - oldTotal; //当前一秒内的流量=总流量-上一秒总流量；
-                oldTotal = globalTotal;
+                long globalTotal = total.get(); //获取截止当前的总流量
+                long oneSecondTotal = globalTotal - oldTotal; //当前1秒内的总流量=截止当前的总流量-上一秒总流量；
+                oldTotal = globalTotal; //将上1秒的总流量更新为当前的总流量，用于下一秒使用
 
                 long aPass = passMap.get(PARAM_A).get();
                 long aOneSecondPass = aPass - oldPass[0];
@@ -171,9 +173,9 @@ public class TestSentinelService {
 
 
 
-                long aBlock = blockMap.get(PARAM_A).get();
-                long aOneSecondBlock = aBlock - oldBlock[0];
-                oldBlock[0] = aBlock;
+                long aBlock = blockMap.get(PARAM_A).get(); //获取场景paramA截止当前被拦截的总流量
+                long aOneSecondBlock = aBlock - oldBlock[0]; //场景paramA当前1秒内被拦截的流量= 场景paramA被拦截的总流量-场景paramA上1秒被拦截的总流量
+                oldBlock[0] = aBlock; //将场景paramA上1秒被拦截的总流量更新为场景paramA当前被拦截的总流量，用于下一秒使用
 
                 long bBlock = blockMap.get(PARAM_B).get();
                 long bOneSecondBlock = bBlock - oldBlock[1];
@@ -217,11 +219,12 @@ public class TestSentinelService {
         public void run() {
             while (!stop) {
                 try {
-                    String result = sentinelParamPriorityTestFacade.sentinelParamPriorityTest(request);
+                    String result = sentinelParamPriorityTestFacade.sentinelParamPriorityTest("111",request);
                     //System.out.println("time:" + (System.currentTimeMillis() - timeStart));
                     //调用的dubbo接口里的方法返回了success，则表示该条流量通过了
                     if(StringUtils.equals(result, "success")){
-                        AtomicInteger passCount = passMap.get(request.getScene()) != null ? passMap.get(request.getScene()) : new AtomicInteger();
+                        AtomicInteger passCount = passMap.get(request.getScene()) != null ? passMap.get(request.getScene()) : new AtomicInteger(); //取出之前scene已经通过的流量数
+                        //统计当前scene的场景的通过的流量数加1
                         passCount.addAndGet(1);  //在多线程中使用addAndGet()方法进行+1操作，保证多线程安全。等同于totle = totle+1
                         passMap.put(request.getScene(), passCount);
                     }
@@ -239,10 +242,10 @@ public class TestSentinelService {
                     // biz exception
                 } finally {
                     //统计总的流量=通过的流量+被拦截的流量
-                    AtomicInteger totalCount = totalMap.get(request.getScene()) != null ? totalMap.get(request.getScene()) : new AtomicInteger();
-                    totalCount.addAndGet(1);
-                    totalMap.put(request.getScene(), totalCount);
-                    total.addAndGet(1);
+                    AtomicInteger totalCount = totalMap.get(request.getScene()) != null ? totalMap.get(request.getScene()) : new AtomicInteger(); //取出之前的总流量数
+                    totalCount.addAndGet(1);//该场景下的总流量数加1
+                    totalMap.put(request.getScene(), totalCount);//将场景及对应该场景下的总流量数放入map中
+                    total.addAndGet(1); //调用接口的总流量加1(不区分场景也不关注是否通过)
                 }
 
                 if (seconds > 50) {  //当前50s让线程调用先睡眠100ms，降低qps的值
@@ -260,3 +263,43 @@ public class TestSentinelService {
     }
 
 }
+
+
+
+/*
+* sentinelParamPriorityTestFacade.sentinelParamPriorityTest()方法实现逻辑：
+@Slf4j
+@DubboService(version = "1.0.0")
+public class SentinelParamPriorityTestServiceImpl implements SentinelParamPriorityTestFacade {
+
+    @Override
+    @SentinelResource(value = "sentinelParamPriorityTest", fallback = "sentinelParamPriorityFallback")
+    public String sentinelParamPriorityTest(String param1, RecommendRequest request) {
+        if (request == null) {
+            return "param null";
+        }
+        log.info("sentinelParamPriorityTest-success,scene:{}", request.getScene());
+        return "success";
+    }
+
+    public String sentinelParamPriorityFallback(RecommendRequest request) {
+        log.info("sentinelParamPriorityTest-failed");
+        return "failed";
+    }
+}
+*/
+
+/*
+*  运行结果：
+    begin to statistic!!!
+        100 send qps is: 63
+        1664191855838, total:63, passA:21, blockA:0, passB:17, blockB:4, passC:17, blockC:4
+        99 send qps is: 63
+        1664191856839, total:63, passA:21, blockA:0, passB:0, blockB:21, passC:1, blockC:20
+        98 send qps is: 72
+        1664191857839, total:72, passA:20, blockA:4, passB:0, blockB:24, passC:0, blockC:24
+        97 send qps is: 63
+        1664191858839, total:63, passA:19, blockA:2, passB:0, blockB:21, passC:0, blockC:21
+        96 send qps is: 33
+*/
+

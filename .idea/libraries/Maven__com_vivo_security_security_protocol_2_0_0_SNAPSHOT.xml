@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.vivo.security:security-protocol:2.0.0-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://C:/localMaven/maven/com/vivo/security/security-protocol/2.0.0-SNAPSHOT/security-protocol-2.0.0-20180202.100530-95.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://C:/localMaven/maven/com/vivo/security/security-protocol/2.0.0-SNAPSHOT/security-protocol-2.0.0-20180202.100530-95-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://C:/localMaven/maven/com/vivo/security/security-protocol/2.0.0-SNAPSHOT/security-protocol-2.0.0-20180202.100530-95-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

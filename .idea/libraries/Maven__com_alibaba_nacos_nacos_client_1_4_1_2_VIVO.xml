@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.alibaba.nacos:nacos-client:1.4.1.2-VIVO">
+    <CLASSES>
+      <root url="jar://C:/localMaven/maven/com/alibaba/nacos/nacos-client/1.4.1.2-VIVO/nacos-client-1.4.1.2-VIVO.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://C:/localMaven/maven/com/alibaba/nacos/nacos-client/1.4.1.2-VIVO/nacos-client-1.4.1.2-VIVO-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://C:/localMaven/maven/com/alibaba/nacos/nacos-client/1.4.1.2-VIVO/nacos-client-1.4.1.2-VIVO-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
