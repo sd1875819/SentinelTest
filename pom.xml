@@ -122,6 +122,12 @@
             <artifactId>poi-scratchpad</artifactId>
             <version>3.17</version>
         </dependency>
+        <dependency>
+            <groupId>org.ngrinder</groupId>
+            <artifactId>ngrinder-groovy</artifactId>
+            <version>3.4</version>
+            <scope>provided</scope>
+        </dependency>
 
     </dependencies>
     <!--dependencyManagement只用来管理jar，不会直接引入依赖，请不要随意调整或者删除dependencyManagement中管理的包，否则大概率加大jar冲突的风险，可以添加-->
